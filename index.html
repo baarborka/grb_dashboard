@@ -157,6 +157,10 @@
                 <h3 class="text-xs font-bold text-gray-900 border-b pb-1 mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-sliders text-purple-500"></i> System
                 </h3>
+                <div class="input-group mb-3">
+                    <label>Detector Area (cm²)</label>
+                    <input type="number" id="area" value="100.0" step="10">
+                </div>
                 <div class="flex items-center gap-2 mb-3 p-2 bg-gray-50 rounded border border-gray-100">
                     <input type="checkbox" id="noiseless" class="w-4 h-4 text-blue-600 rounded">
                     <label for="noiseless" class="cursor-pointer mb-0 select-none">Noiseless Mode</label>
@@ -259,7 +263,6 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         // --- CONSTANTS & HELPERS ---
-        const AREA = 100.0; // cm^2
         
         function linspace(start, end, num) {
             const arr = [];
@@ -347,6 +350,7 @@
             const bgIndex = parseFloat(document.getElementById('bg_index').value);
 
             // System
+            const area = parseFloat(document.getElementById('area').value);
             const noiseless = document.getElementById('noiseless').checked;
             
             // Bands parsing
@@ -398,7 +402,7 @@
                 if(idxs.length > 1) {
                     const subE = idxs.map(i => E_grid[i]);
                     const subSpec = idxs.map(i => totalSpec[i]);
-                    flux = trapz(subSpec, subE) * AREA;
+                    flux = trapz(subSpec, subE) * area;
                 }
 
                 // B. Temporal Profile
