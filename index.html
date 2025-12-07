@@ -100,12 +100,19 @@
                         <input type="number" id="decay_index" value="-0.2" step="0.1">
                     </div>
                 </div>
-                <div class="input-group mb-3">
-                    <label>Lag Factor (Time Shift)</label>
-                    <!-- T_peak_min=0.7, Max=0.75, so Lag=0.05 -->
-                    <input type="number" id="lag_factor" value="0.05" step="0.01">
-                    <p class="text-[10px] text-gray-400 mt-1">Shift added to T_peak_min (0.7s)</p>
+                
+                <!-- NEW: T_Peak Min/Max Inputs -->
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="input-group">
+                        <label>T Peak Min (s)</label>
+                        <input type="number" id="t_peak_min" value="0.7" step="0.05">
+                    </div>
+                    <div class="input-group">
+                        <label>T Peak Max (s)</label>
+                        <input type="number" id="t_peak_max" value="0.75" step="0.05">
+                    </div>
                 </div>
+
                 <div class="grid grid-cols-2 gap-3">
                     <div class="input-group">
                         <label>Duration (s)</label>
@@ -179,7 +186,7 @@
         <div class="flex-1 overflow-y-auto p-6 scroll-smooth">
             
             <!-- VIEW: SINGLE RUN -->
-            <div id="view-single" class="space-y-6 max-w-7xl mx-auto">
+            <div id="view-single" class="space-y-8 max-w-5xl mx-auto pb-10">
                 
                 <!-- Action Bar -->
                 <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-100">
@@ -193,34 +200,34 @@
                 </div>
 
                 <!-- Plot: Light Curves -->
-                <div class="bg-white p-1 rounded-lg shadow-sm border border-gray-100">
-                    <div id="plot_lc" class="w-full h-[400px]"></div>
+                <div class="bg-white p-2 rounded-lg shadow-sm border border-gray-100">
+                    <div id="plot_lc" class="w-full h-[500px]"></div>
                 </div>
 
-                <!-- Histograms Row -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-gray-700 mb-2 text-sm uppercase">Numeric Error Distribution</h3>
-                        <p class="text-xs text-gray-400 mb-4">Normalized Error = (Actual - Predicted) / Mean</p>
-                        <div id="plot_num_hist" class="w-full h-[350px]"></div>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-gray-700 mb-2 text-sm uppercase">Sign Bias Distribution</h3>
-                        <p class="text-xs text-gray-400 mb-4">Count of time bins where signal was Brighter/Dimmer than ref.</p>
-                        <div id="plot_sign_hist" class="w-full h-[350px]"></div>
-                    </div>
+                <!-- Numeric Histogram -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 mb-2 text-sm uppercase">Numeric Error Distribution</h3>
+                    <p class="text-xs text-gray-400 mb-4">Normalized Error = (Actual - Predicted) / Mean</p>
+                    <div id="plot_num_hist" class="w-full h-[400px]"></div>
+                </div>
+
+                <!-- Sign Histogram -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 mb-2 text-sm uppercase">Sign Bias Distribution</h3>
+                    <p class="text-xs text-gray-400 mb-4">Count of time bins where signal was Brighter/Dimmer than ref.</p>
+                    <div id="plot_sign_hist" class="w-full h-[400px]"></div>
                 </div>
 
                 <!-- Autocorrelation -->
                 <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 mb-10">
                     <h3 class="font-bold text-gray-700 mb-2 text-sm uppercase">Autocorrelation of Deviations</h3>
                     <p class="text-xs text-gray-400 mb-4">Detects if errors are correlated in time (indicating a lag or model mismatch).</p>
-                    <div id="plot_autocorr" class="w-full h-[400px]"></div>
+                    <div id="plot_autocorr" class="w-full h-[500px]"></div>
                 </div>
             </div>
 
             <!-- VIEW: MONTE CARLO -->
-            <div id="view-mc" class="hidden space-y-6 max-w-7xl mx-auto">
+            <div id="view-mc" class="hidden space-y-6 max-w-7xl mx-auto pb-10">
                 
                 <!-- Action Bar -->
                 <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-100">
@@ -242,7 +249,7 @@
                 <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
                     <h3 class="font-bold text-gray-700 mb-2 text-sm uppercase">Mean Autocorrelation vs. Energy</h3>
                     <p class="text-xs text-gray-400 mb-4">Aggregated results (Mean ± Std Dev) across all iterations.</p>
-                    <div id="plot_mc" class="w-full h-[550px]"></div>
+                    <div id="plot_mc" class="w-full h-[600px]"></div>
                 </div>
             </div>
 
@@ -327,7 +334,10 @@
             // Temporal
             const rise = parseFloat(document.getElementById('rise_index').value);
             const decay = parseFloat(document.getElementById('decay_index').value);
-            const lagInput = parseFloat(document.getElementById('lag_factor').value);
+            // UPDATED: T_Peak Min/Max logic
+            const tPeakMinInput = parseFloat(document.getElementById('t_peak_min').value);
+            const tPeakMaxInput = parseFloat(document.getElementById('t_peak_max').value);
+            
             const tEnd = parseFloat(document.getElementById('t_end').value);
             const nPoints = parseInt(document.getElementById('n_points').value);
             
@@ -392,9 +402,8 @@
                 }
 
                 // B. Temporal Profile
-                // Base peak min is 0.7s
-                const tPeakMin = 0.7;
-                const tPeak = tPeakMin + norms[idx] * lagInput; 
+                // UPDATED: Lag calculation using Min and Max
+                const tPeak = tPeakMinInput + norms[idx] * (tPeakMaxInput - tPeakMinInput);
 
                 const profile = timeGrid.map(t => {
                     if (t < tPeak) {
